@@ -56,10 +56,6 @@ func (self *s3iterator) initCrawler() {
 }
 
 func (self *s3iterator) Next() *LogFile {
-	if self.crawler == nil {
-		self.initCrawler()
-	}
-
 	if self.currentPos >= self.crawler.MaxKeys &&
 		self.crawler.MaxKeys == LIMIT {
 		self.initCrawler()
@@ -76,10 +72,14 @@ func (self *s3iterator) Next() *LogFile {
 }
 
 func (self *s3iterator) End() bool {
-	//return self.currentPos > 0
-	if self.crawler != nil &&
-		!self.crawler.IsTruncated &&
+	if self.crawler == nil {
+		self.initCrawler()
+	}
+
+	if !self.crawler.IsTruncated &&
 		self.currentPos >= self.crawler.MaxKeys {
+		return true
+	} else if self.crawler.MaxKeys == 0 {
 		return true
 	}
 
@@ -99,8 +99,7 @@ func getBucket(cfg *config) *s3.Bucket {
 	return bucket
 }
 
-func NewIterator(prefix string, cfg *config) *s3iterator {
-	marker := ""
+func NewIterator(prefix string, marker string, cfg *config) *s3iterator {
 	bucket := getBucket(cfg)
 
 	return &s3iterator{
