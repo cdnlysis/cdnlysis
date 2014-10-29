@@ -28,7 +28,10 @@
         </ul>
       </header>
       <section>
-        <p>CDNlysis reads your log entries from your S3 bucket and sends them your Influx Server. You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.</p>
+        <h1>
+<a name="cdnlysis" class="anchor" href="#cdnlysis"><span class="octicon octicon-link"></span></a>cdnlysis</h1>
+
+<p>CDNlysis reads your log entries from your S3 bucket and sends them your Influx Server. You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.</p>
 
 <p>You can use this for:</p>
 
@@ -45,7 +48,13 @@ etc.</li>
 <h1>
 <a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h1>
 
-<p>CDNlysis resumes a sync operation from the last processed file. CDN logs are saved as gzip files in S3, CDNlysis downloads, unzips, parses and feeds this to InfluxDB.</p>
+<ul>
+<li>CDNlysis resumes a sync operation from the last processed file.</li>
+<li>CDN logs are saved as gzip files in S3, CDNlysis downloads, unzips, parses and feeds this to InfluxDB.</li>
+<li>It iteratively walks over your historical logFiles too.</li>
+<li>CDNlysis converts the time provided in the log entries as the actual time of saved records. This ensures consistency in expctations and data delivered.</li>
+<li>CDNlysis works not only over Amazon Cloudfront but anything that complies with W3C Extended Log Format (<a href="http://www.w3.org/TR/WD-logfile.html">http://www.w3.org/TR/WD-logfile.html</a>).</li>
+</ul>
 
 <h1>
 <a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h1>
@@ -62,6 +71,61 @@ In the checkout directory</p>
 </code></pre>
 
 <p>should generate a binary for you to execute.</p>
+
+<h1>
+<a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h1>
+
+<p>Use the newly created binary to generate help</p>
+
+<pre><code>piyush:cdnlysis [dev] $ ./cdnlysis
+  -config="": Config [.ini format] file to Load the configurations from
+  -prefix="": Directory prefix to process the logs for
+</code></pre>
+
+<p>-config should be a path to a valid configuration file which can have 4 sections.</p>
+
+<ul>
+<li>Influx has the all the information for your Influx deployment</li>
+<li>SyncProgress is CDNlysis' internal database. The path must be changed to something more permanent. This will help you prevent from feeding redundant entries to your Influx database.</li>
+<li>S3 keeps all your AWS configurations. Prefix is the prefix/directory in which logs should be searched</li>
+</ul>
+
+<p>A sample configuration file looks like this:</p>
+
+<pre><code>[Influx]
+Host="127.0.0.1:8086"
+Username=root
+Password=root
+IsUDP=true
+Database=cdn_logs
+
+[SyncProgress]
+Path="/tmp/cdn_sync_progress"
+
+[S3]
+Prefix = ""
+AccessKey = ""
+SecretKey = ""
+Bucket = ""
+Region = "us-east-1"
+</code></pre>
+
+<p>Optionally, you can also provide -prefix as a Command Line Argument, by which you can run multiple sync jobs corresponding to each directory.</p>
+
+<h1>
+<a name="execute" class="anchor" href="#execute"><span class="octicon octicon-link"></span></a>Execute</h1>
+
+<p>Just provide the config path and an optional prefix. Sit back and let the tool do the rest.</p>
+
+<pre><code>./cdnlysis -config=/Users/piyush/dev/conf/cdn-analysis.cfg -prefix=plain
+</code></pre>
+
+<h1>
+<a name="screenshots" class="anchor" href="#screenshots"><span class="octicon octicon-link"></span></a>Screenshots</h1>
+
+<p><img src="https://cloud.githubusercontent.com/assets/580782/4833122/f1baa26a-5fa1-11e4-919e-261f46cec2b0.png" alt="Screenshot1">
+<img src="https://cloud.githubusercontent.com/assets/580782/4833123/f1bb5002-5fa1-11e4-910c-35a4845843e0.png" alt="Screenshot2">
+<img src="https://cloud.githubusercontent.com/assets/580782/4833124/f1eff384-5fa1-11e4-99a3-b35876566ccd.png" alt="Screenshot3"></p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/Simversity">Simversity</a></p>
