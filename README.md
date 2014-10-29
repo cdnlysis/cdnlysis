@@ -79,4 +79,6 @@ Just provide the config path and an optional prefix. Sit back and let the tool d
 ```
 
 # Screenshots
-![Screenshot 1](https://www.dropbox.com/s/ncf8e25noenfy2f/Screen%20Shot%202014-10-30%20at%2000.49.08.png?dl=0)
+![Screenshot1](https://cloud.githubusercontent.com/assets/580782/4833122/f1baa26a-5fa1-11e4-919e-261f46cec2b0.png)
+![Screenshot2](https://cloud.githubusercontent.com/assets/580782/4833123/f1bb5002-5fa1-11e4-910c-35a4845843e0.png)
+![Screenshot3](https://cloud.githubusercontent.com/assets/580782/4833124/f1eff384-5fa1-11e4-99a3-b35876566ccd.png)
