@@ -1,13 +1,14 @@
 cdnlysis
 ========
 
-CDNlysis reads your log entries from your S3 bucket and sends them your Influx Server. You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.
+CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to InfluxDB.
+You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.
 
 You can use this for:
 * Understanding how the Bandwidth is being used.
-* Finding out the most downloadable content
-* Generate trends for your most popular S3 content.
-* Understand geographical behaviour of your content access.
+* Finding out the most popular and most downloadable content.
+* Generate trends for your most popular Videos, Audios, Slides etc.
+* Understand geographical behaviour of the Requests.
 * Amount of Bytes transferred to & fro the Cloudfront distributions.
 * Find out the most profitable referrer from where your content is being accessed.
 etc.
