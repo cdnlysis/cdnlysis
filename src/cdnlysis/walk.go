@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 
 	"launchpad.net/goamz/aws"
@@ -15,27 +16,34 @@ func getRegion(cfg *config) aws.Region {
 }
 
 type s3iterator struct {
+	bucket     *s3.Bucket
 	prefix     string
 	marker     string
 	limit      int
 	currentPos int
 	crawler    *s3.ListResp
-	cfg        *config
+}
+
+type LogFile struct {
+	Path   string
+	Bucket *s3.Bucket
+}
+
+func (self *LogFile) Get() (data []byte, err error) {
+	return self.Bucket.Get(self.Path)
+}
+
+func (self *LogFile) GetReader() (io.ReadCloser, error) {
+	return self.Bucket.GetReader(self.Path)
 }
 
 func (self *s3iterator) initCrawler() {
 	self.currentPos = 0
 
-	auth := aws.Auth{
-		AccessKey: self.cfg.S3.AccessKey,
-		SecretKey: self.cfg.S3.SecretKey,
-	}
+	res, err := self.bucket.List(
+		self.prefix, "", self.marker, self.limit,
+	)
 
-	region := getRegion(self.cfg)
-
-	connection := s3.New(auth, region)
-	bucket := connection.Bucket(self.cfg.S3.Bucket)
-	res, err := bucket.List(self.prefix, "", self.marker, self.limit)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +55,7 @@ func (self *s3iterator) initCrawler() {
 	self.crawler = res
 }
 
-func (self *s3iterator) Next() *s3.Key {
+func (self *s3iterator) Next() *LogFile {
 	if self.crawler == nil {
 		self.initCrawler()
 	}
@@ -64,10 +72,11 @@ func (self *s3iterator) Next() *s3.Key {
 		self.marker = key.Key
 	}(key)
 
-	return &key
+	return &LogFile{key.Key, self.bucket}
 }
 
 func (self *s3iterator) End() bool {
+	//return self.currentPos > 0
 	if self.crawler != nil &&
 		!self.crawler.IsTruncated &&
 		self.currentPos >= self.crawler.MaxKeys {
@@ -77,10 +86,24 @@ func (self *s3iterator) End() bool {
 	return false
 }
 
+func getBucket(cfg *config) *s3.Bucket {
+	auth := aws.Auth{
+		AccessKey: cfg.S3.AccessKey,
+		SecretKey: cfg.S3.SecretKey,
+	}
+
+	region := getRegion(cfg)
+
+	connection := s3.New(auth, region)
+	bucket := connection.Bucket(cfg.S3.Bucket)
+	return bucket
+}
+
 func NewIterator(prefix string, cfg *config) *s3iterator {
 	marker := ""
+	bucket := getBucket(cfg)
 
 	return &s3iterator{
-		prefix, marker, LIMIT, STARTPOS, nil, cfg,
+		bucket, prefix, marker, LIMIT, STARTPOS, nil,
 	}
 }

@@ -16,6 +16,7 @@ type config struct {
 	}
 
 	Logs struct {
+		Prefix   string
 		Location string
 	}
 }
@@ -26,7 +27,7 @@ Host="127.0.0.1:8086"
 Username=root
 Password=root
 IsUDP=true
-Database=server_events
+Database=cdn_logs
 
 [S3]
 AccessKey = ""
@@ -35,6 +36,7 @@ Bucket = ""
 Region = "us-east-1"
 
 [Logs]
+Prefix="cdn"
 Location="/tmp/"`
 
 func (self *config) MakeConfig(configPath string) {
