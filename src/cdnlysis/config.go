@@ -8,6 +8,10 @@ import (
 type config struct {
 	Influx influxdb.ClientConfig
 
+	SyncProgress struct {
+		Path string
+	}
+
 	S3 struct {
 		Prefix    string
 		AccessKey string
@@ -29,6 +33,9 @@ Username=root
 Password=root
 IsUDP=true
 Database=cdn_logs
+
+[SyncProgress]
+Path="/tmp/cdn_sync_progress"
 
 [S3]
 Prefix = ""
