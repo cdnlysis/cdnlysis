@@ -40,7 +40,7 @@ func (self *s3iterator) initCrawler() {
 		log.Fatal(err)
 	}
 
-	if res.IsTruncated {
+	if !res.IsTruncated {
 		res.MaxKeys = len(res.Contents)
 	}
 
@@ -69,7 +69,7 @@ func (self *s3iterator) Next() *s3.Key {
 
 func (self *s3iterator) End() bool {
 	if self.crawler != nil &&
-		self.crawler.IsTruncated &&
+		!self.crawler.IsTruncated &&
 		self.currentPos >= self.crawler.MaxKeys {
 		return true
 	}
@@ -77,7 +77,7 @@ func (self *s3iterator) End() bool {
 	return false
 }
 
-func Iterator(prefix string, cfg *config) *s3iterator {
+func NewIterator(prefix string, cfg *config) *s3iterator {
 	marker := ""
 
 	return &s3iterator{
