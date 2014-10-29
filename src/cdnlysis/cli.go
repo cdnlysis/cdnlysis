@@ -14,7 +14,14 @@ func cliArgs(cfg *config) {
 		"Config [.ini format] file to Load the configurations from",
 	)
 
+	prefixPtr := flag.String(
+		"prefix",
+		"",
+		"Directory prefix to process the logs for",
+	)
+
 	args["config"] = configPtr
+	args["prefix"] = prefixPtr
 
 	//Must be called after all flags are defined and
 	//before flags are accessed by the program.
@@ -27,4 +34,9 @@ func cliArgs(cfg *config) {
 	}
 
 	cfg.MakeConfig(*args["config"])
+
+	if *args["prefix"] != "" {
+		cfg.S3.Prefix = *args["prefix"]
+	}
+
 }

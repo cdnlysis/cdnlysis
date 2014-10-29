@@ -9,6 +9,7 @@ type config struct {
 	Influx influxdb.ClientConfig
 
 	S3 struct {
+		Prefix    string
 		AccessKey string
 		SecretKey string
 		Bucket    string
@@ -30,6 +31,7 @@ IsUDP=true
 Database=cdn_logs
 
 [S3]
+Prefix = ""
 AccessKey = ""
 SecretKey = ""
 Bucket = ""
