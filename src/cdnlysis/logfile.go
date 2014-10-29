@@ -23,8 +23,6 @@ func addToInflux(series *influxdb.Series) {
 }
 
 func processFile(file *LogFile) {
-	log.Println("Processing file " + file.Path)
-
 	reader, err := file.GetReader()
 	if err != nil {
 		log.Println(err)
