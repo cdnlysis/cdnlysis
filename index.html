@@ -31,15 +31,16 @@
         <h1>
 <a name="cdnlysis" class="anchor" href="#cdnlysis"><span class="octicon octicon-link"></span></a>cdnlysis</h1>
 
-<p>CDNlysis reads your log entries from your S3 bucket and sends them your Influx Server. You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.</p>
+<p>CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to InfluxDB.
+You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.</p>
 
 <p>You can use this for:</p>
 
 <ul>
 <li>Understanding how the Bandwidth is being used.</li>
-<li>Finding out the most downloadable content</li>
-<li>Generate trends for your most popular S3 content.</li>
-<li>Understand geographical behaviour of your content access.</li>
+<li>Finding out the most popular and most downloadable content.</li>
+<li>Generate trends for your most popular Videos, Audios, Slides etc.</li>
+<li>Understand geographical behaviour of the Requests.</li>
 <li>Amount of Bytes transferred to &amp; fro the Cloudfront distributions.</li>
 <li>Find out the most profitable referrer from where your content is being accessed.
 etc.</li>
