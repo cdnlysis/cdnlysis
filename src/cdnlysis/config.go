@@ -8,6 +8,19 @@ import (
 type config struct {
 	Influx influxdb.ClientConfig
 
+	Backends struct {
+		Influx bool
+		Mongo  bool
+	}
+
+	Mongo struct {
+		Host       string
+		Username   string
+		Password   string
+		Database   string
+		Collection string
+	}
+
 	SyncProgress struct {
 		Path string
 	}
@@ -27,12 +40,23 @@ type config struct {
 }
 
 const baseConfig = `;Sample Configuration File
+[Backends]
+Influx=true
+Mongo=false
+
 [Influx]
 Host="127.0.0.1:8086"
 Username=root
 Password=root
 IsUDP=true
 Database=cdn_logs
+
+[Mongo]
+Host="127.0.0.1:27017"
+Username=""
+Password=""
+Database="cdn_logs"
+Collection="cdn"
 
 [SyncProgress]
 Path="/tmp/cdn_sync_progress"

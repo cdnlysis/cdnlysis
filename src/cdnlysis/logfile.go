@@ -7,6 +7,7 @@ import (
 	"log"
 
 	influxdb "github.com/influxdb/influxdb/client"
+	"labix.org/v2/mgo"
 )
 
 func addToInflux(series *influxdb.Series) {
@@ -19,6 +20,40 @@ func addToInflux(series *influxdb.Series) {
 	if err := conn.WriteSeries([]*influxdb.Series{series}); err != nil {
 		log.Println(err)
 		return
+	}
+}
+
+type mongoSeries []*LogEntry
+
+func addToMongo(records *mongoSeries) {
+
+	info := mgo.DialInfo{
+		Addrs:    []string{Settings.Mongo.Host},
+		Database: Settings.Mongo.Database,
+		Direct:   true,
+		Username: Settings.Mongo.Username,
+		Password: Settings.Mongo.Password,
+	}
+
+	var err error
+
+	session, err := mgo.DialWithInfo(&info)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	conn := session.DB(Settings.Mongo.Database)
+	coll := conn.C(Settings.Mongo.Collection)
+
+	var interfaceSlice []interface{} = make([]interface{}, len(*records))
+	for i, d := range *records {
+		interfaceSlice[i] = d
+	}
+
+	err = coll.Insert(interfaceSlice...)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -43,6 +78,7 @@ func processFile(file *LogFile) {
 	bufReader := bufio.NewReader(gzipReader)
 
 	series := influxdb.Series{Settings.Logs.Prefix, COLUMNS, nil}
+	mongo_records := mongoSeries{}
 
 	for {
 		ix++
@@ -55,10 +91,23 @@ func processFile(file *LogFile) {
 			// if you return error
 		} else if ix > 2 {
 			// Log Entries
-			data := ParseRecord(log_record)
-			series.Points = append(series.Points, data)
+
+			if Settings.Backends.Influx {
+				data := InfluxRecord(log_record)
+				series.Points = append(series.Points, data)
+			}
+
+			if Settings.Backends.Mongo {
+				mongo_records = append(mongo_records, MongoRecord(log_record))
+			}
 		}
 	}
 
-	addToInflux(&series)
+	if Settings.Backends.Mongo {
+		addToInflux(&series)
+	}
+
+	if Settings.Backends.Mongo {
+		addToMongo(&mongo_records)
+	}
 }

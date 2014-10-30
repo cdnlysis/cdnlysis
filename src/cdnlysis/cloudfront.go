@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	utils "github.com/Simversity/gottp/utils"
 )
 
 const TAB = "\t"
@@ -33,28 +35,28 @@ var COLUMNS = []string{
 }
 
 type LogEntry struct {
-	Date           string  `json:"date"`
-	Time           string  `json:"time"`
-	EdgeLocation   string  `json:"x_edge_location"`
-	BytesSent      int64   `json:"sc_bytes,string"`
-	IP             string  `json:"c_ip"`
-	Method         string  `json:"cs_method"`
-	Host           string  `json:"cs_host"`
-	UriStem        string  `json:"cs_uri_stem"`
-	Status         int64   `json:"sc_status,string"`
-	Referer        string  `json:"cs_referer"`
-	UserAgent      string  `json:"cs_user_agent"`
-	UriQuery       string  `json:"cs_uri_query"`
-	Cookie         string  `json:"cs_cookie"`
-	EdgeResultType string  `json:"x_edge_result_type"`
-	EdgeRequestId  string  `json:"x_edge_request_id"`
-	HostHeader     string  `json:"x_host_header"`
-	Protocol       string  `json:"cs_protocol"`
-	BytesReceived  int64   `json:"cs_bytes,string"`
-	TimeTaken      float64 `json:"time_taken,string"`
+	Date           string  `bson:"date" json:"date"`
+	Time           string  `bson:"time" json:"time"`
+	EdgeLocation   string  `bson:"x_edge_location" json:"x_edge_location"`
+	BytesSent      int64   `bson:"sc_bytes" json:"sc_bytes,string"`
+	IP             string  `bson:"c_ip" json:"c_ip"`
+	Method         string  `bson:"cs_method" json:"cs_method"`
+	Host           string  `bson:"cs_host" json:"cs_host"`
+	UriStem        string  `bson:"cs_uri_stem" json:"cs_uri_stem"`
+	Status         int     `bson:"sc_status" json:"sc_status,string"`
+	Referer        string  `bson:"cs_referer" json:"cs_referer"`
+	UserAgent      string  `bson:"cs_user_agent" json:"cs_user_agent"`
+	UriQuery       string  `bson:"cs_uri_query" json:"cs_uri_query"`
+	Cookie         string  `bson:"cs_cookie" json:"cs_cookie"`
+	EdgeResultType string  `bson:"x_edge_result_type" json:"x_edge_result_type"`
+	EdgeRequestId  string  `bson:"x_edge_request_id" json:"x_edge_request_id"`
+	HostHeader     string  `bson:"x_host_header" json:"x_host_header"`
+	Protocol       string  `bson:"cs_protocol" json:"cs_protocol"`
+	BytesReceived  int64   `bson:"cs_bytes" json:"cs_bytes,string"`
+	TimeTaken      float64 `bson:"time_taken" json:"time_taken,string"`
 }
 
-func ParseRecord(log_record string) []interface{} {
+func InfluxRecord(log_record string) []interface{} {
 	if strings.HasSuffix(log_record, "\n") {
 		log_record = log_record[:len(log_record)-1]
 	}
@@ -107,8 +109,7 @@ func ParseRecord(log_record string) []interface{} {
 	return record
 }
 
-/*
-func ParseRecord(log_record string) *LogEntry {
+func MongoRecord(log_record string) *LogEntry {
 	if strings.HasSuffix(log_record, "\n") {
 		log_record = log_record[:len(log_record)-1]
 	}
@@ -135,4 +136,3 @@ func ParseRecord(log_record string) *LogEntry {
 	utils.Decoder([]byte(json_string), &entry)
 	return &entry
 }
-*/
