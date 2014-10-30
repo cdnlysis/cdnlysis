@@ -31,7 +31,7 @@ func main() {
 		go func(wg *sync.WaitGroup, file *LogFile) {
 			defer wg.Done()
 			log.Println("Processing file " + file.Path)
-			//processFile(file)
+			processFile(file)
 		}(&wg, file)
 	}
 
