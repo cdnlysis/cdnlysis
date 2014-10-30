@@ -1,7 +1,7 @@
 cdnlysis
 ========
 
-CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to InfluxDB.
+CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to multiple database backends. As of now it writes to InfluxDB & MongoDB (turned off by default).
 You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.
 
 You can use this for:
@@ -19,9 +19,10 @@ etc.
 * It iteratively walks over your historical logFiles too.
 * CDNlysis converts the time provided in the log entries as the actual time of saved records. This ensures consistency in expctations and data delivered.
 * CDNlysis works not only over Amazon Cloudfront but anything that complies with W3C Extended Log Format (http://www.w3.org/TR/WD-logfile.html).
+* CDNlysis can write to either InfluxDB, MongoDB or both.
 
 # Usage
-Installing CDNlysis is dirty easy, just make sure you have latest Go installed and follow these steps:
+Installing CDNlysis is dirt easy, just make sure you have latest Go installed and follow these steps:
 In the checkout directory
 
 ```
@@ -45,19 +46,32 @@ piyush:cdnlysis [dev] $ ./cdnlysis
 ```
 
 -config should be a path to a valid configuration file which can have 4 sections.
- * Influx has the all the information for your Influx deployment
- * SyncProgress is CDNlysis' internal database. The path must be changed to something more permanent. This will help you prevent from feeding redundant entries to your Influx database.
- * S3 keeps all your AWS configurations. Prefix is the prefix/directory in which logs should be searched
+ * Backends: Quick access switch for the enabled Backends.
+ * Influx: Influx configuration.
+ * Mongo: Mongo configuration.
+ * SyncProgress: CDNlysis' internal database. The path must be changed to something more permanent. This will help you prevent from feeding redundant entries to your Influx database.
+ * S3: AWS configurations. Prefix is the prefix/directory in which logs should be searched.
 
 A sample configuration file looks like this:
 
 ```
+[Backends]
+Influx=true
+Mongo=false
+
 [Influx]
 Host="127.0.0.1:8086"
 Username=root
 Password=root
 IsUDP=true
 Database=cdn_logs
+
+[Mongo]
+Host="127.0.0.1:27017"
+Username=""
+Password=""
+Database="cdn_logs"
+Collection="cdn"
 
 [SyncProgress]
 Path="/tmp/cdn_sync_progress"
