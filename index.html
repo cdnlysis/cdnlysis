@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Cdnlysis by Simversity</title>
+    <title>Cdnlysis by meson10</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -18,20 +18,20 @@
         <h1>Cdnlysis</h1>
         <p>Save Cloudfront logs to a time series database.</p>
 
-        <p class="view"><a href="https://github.com/Simversity/cdnlysis">View the Project on GitHub <small>Simversity/cdnlysis</small></a></p>
+        <p class="view"><a href="https://github.com/meson10/cdnlysis">View the Project on GitHub <small>meson10/cdnlysis</small></a></p>
 
 
         <ul>
-          <li><a href="https://github.com/Simversity/cdnlysis/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/Simversity/cdnlysis/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/Simversity/cdnlysis">View On <strong>GitHub</strong></a></li>
+          <li><a href="https://github.com/meson10/cdnlysis/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/meson10/cdnlysis/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/meson10/cdnlysis">View On <strong>GitHub</strong></a></li>
         </ul>
       </header>
       <section>
         <h1>
 <a name="cdnlysis" class="anchor" href="#cdnlysis"><span class="octicon octicon-link"></span></a>cdnlysis</h1>
 
-<p>CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to InfluxDB.
+<p>CDNlysis syncs Amazon Cloudfront log entries from S3 bucket and streams them to multiple database backends. As of now it writes to InfluxDB &amp; MongoDB (turned off by default).
 You can later use Influx Querying API to do anaylsis or use Grafana to generate awesome graphs.</p>
 
 <p>You can use this for:</p>
@@ -55,12 +55,13 @@ etc.</li>
 <li>It iteratively walks over your historical logFiles too.</li>
 <li>CDNlysis converts the time provided in the log entries as the actual time of saved records. This ensures consistency in expctations and data delivered.</li>
 <li>CDNlysis works not only over Amazon Cloudfront but anything that complies with W3C Extended Log Format (<a href="http://www.w3.org/TR/WD-logfile.html">http://www.w3.org/TR/WD-logfile.html</a>).</li>
+<li>CDNlysis can write to either InfluxDB, MongoDB or both.</li>
 </ul>
 
 <h1>
 <a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h1>
 
-<p>Installing CDNlysis is dirty easy, just make sure you have latest Go installed and follow these steps:
+<p>Installing CDNlysis is dirt easy, just make sure you have latest Go installed and follow these steps:
 In the checkout directory</p>
 
 <pre><code>make deps
@@ -86,19 +87,32 @@ In the checkout directory</p>
 <p>-config should be a path to a valid configuration file which can have 4 sections.</p>
 
 <ul>
-<li>Influx has the all the information for your Influx deployment</li>
-<li>SyncProgress is CDNlysis' internal database. The path must be changed to something more permanent. This will help you prevent from feeding redundant entries to your Influx database.</li>
-<li>S3 keeps all your AWS configurations. Prefix is the prefix/directory in which logs should be searched</li>
+<li>Backends: Quick access switch for the enabled Backends.</li>
+<li>Influx: Influx configuration.</li>
+<li>Mongo: Mongo configuration.</li>
+<li>SyncProgress: CDNlysis' internal database. The path must be changed to something more permanent. This will help you prevent from feeding redundant entries to your Influx database.</li>
+<li>S3: AWS configurations. Prefix is the prefix/directory in which logs should be searched.</li>
 </ul>
 
 <p>A sample configuration file looks like this:</p>
 
-<pre><code>[Influx]
+<pre><code>[Backends]
+Influx=true
+Mongo=false
+
+[Influx]
 Host="127.0.0.1:8086"
 Username=root
 Password=root
 IsUDP=true
 Database=cdn_logs
+
+[Mongo]
+Host="127.0.0.1:27017"
+Username=""
+Password=""
+Database="cdn_logs"
+Collection="cdn"
 
 [SyncProgress]
 Path="/tmp/cdn_sync_progress"
@@ -129,7 +143,7 @@ Region = "us-east-1"
 <img src="https://cloud.githubusercontent.com/assets/580782/4833124/f1eff384-5fa1-11e4-99a3-b35876566ccd.png" alt="Screenshot3"></p>
       </section>
       <footer>
-        <p>This project is maintained by <a href="https://github.com/Simversity">Simversity</a></p>
+        <p>This project is maintained by <a href="https://github.com/meson10">meson10</a></p>
         <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
       </footer>
     </div>
