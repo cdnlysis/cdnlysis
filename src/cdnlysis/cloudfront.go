@@ -97,7 +97,7 @@ func ParseRecord(log_record string) []interface{} {
 		} else if item == "time" {
 			datetime += "T" + val + "+00:00"
 			t, _ := time.Parse(time.RFC3339, datetime)
-			record = append(record, t.Unix())
+			record = append(record, t.Unix()*1000)
 
 		} else {
 			record = append(record, val)
