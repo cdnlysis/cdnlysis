@@ -29,8 +29,10 @@ func recursivelyWalk(marker *string) {
 		go func(wg *sync.WaitGroup, file *LogFile) {
 			defer wg.Done()
 			log.Println("Processing file " + file.Path)
-			processFile(file)
-			db.SetVisited(file.Path)
+			ret := processFile(file)
+			if ret == true {
+				db.SetVisited(file.Path)
+			}
 		}(&wg, file)
 	}
 

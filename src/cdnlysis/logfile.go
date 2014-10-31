@@ -77,18 +77,18 @@ func findColumns(msg string) []string {
 	return strings.Split(msg, SPACE)
 }
 
-func processFile(file *LogFile) {
+func processFile(file *LogFile) bool {
 	buff, err := file.Get()
 	if err != nil {
 		log.Println("Cannot GetFIle", err)
-		return
+		return false
 	}
 
 	b := bytes.NewReader(buff)
 	gzipReader, err2 := gzip.NewReader(b)
 	if err2 != nil {
 		log.Println("Cannot make GZIP Reader", err2)
-		return
+		return false
 	}
 
 	defer gzipReader.Close()
@@ -139,4 +139,6 @@ func processFile(file *LogFile) {
 	if Settings.Backends.Mongo {
 		addToMongo(&mongo_records)
 	}
+
+	return true
 }
