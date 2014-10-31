@@ -131,7 +131,7 @@ func processFile(file *LogFile) bool {
 		}
 	}
 
-	if Settings.Backends.Mongo {
+	if Settings.Backends.Influx {
 		series.Columns = columns
 		addToInflux(&series)
 	}
