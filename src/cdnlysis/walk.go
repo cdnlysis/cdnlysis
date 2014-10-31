@@ -8,20 +8,24 @@ import (
 	"launchpad.net/goamz/s3"
 )
 
-const LIMIT = 1000
+const LIMIT = 50
 const STARTPOS = 0
 
 func getRegion(cfg *config) aws.Region {
 	return aws.Regions[cfg.S3.Region]
 }
 
-type s3iterator struct {
+type s3crawler struct {
+	List       *s3.ListResp
 	bucket     *s3.Bucket
-	prefix     string
-	marker     string
-	limit      int
 	currentPos int
-	crawler    *s3.ListResp
+}
+
+type s3iterator struct {
+	prefix      string
+	cfg         *config
+	crawler     *s3crawler
+	IsTruncated bool
 }
 
 type LogFile struct {
@@ -37,49 +41,36 @@ func (self *LogFile) GetReader() (io.ReadCloser, error) {
 	return self.Bucket.GetReader(self.Path)
 }
 
-func (self *s3iterator) initCrawler() {
-	self.currentPos = 0
-
-	res, err := self.bucket.List(
-		self.prefix, "", self.marker, self.limit,
-	)
-
+func (self *s3iterator) initCrawler(marker string) {
+	bucket := getBucket(self.cfg)
+	res, err := bucket.List(self.prefix, "", marker, LIMIT)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	self.IsTruncated = res.IsTruncated
 
 	if !res.IsTruncated {
 		res.MaxKeys = len(res.Contents)
 	}
 
-	self.crawler = res
+	self.crawler = &s3crawler{res, bucket, 0}
 }
 
 func (self *s3iterator) Next() *LogFile {
-	if self.currentPos >= self.crawler.MaxKeys &&
-		self.crawler.MaxKeys == LIMIT {
-		self.initCrawler()
-	}
-
-	key := self.crawler.Contents[self.currentPos]
+	key := self.crawler.List.Contents[self.crawler.currentPos]
 
 	defer func(key s3.Key) {
-		self.currentPos++
-		self.marker = key.Key
+		self.crawler.currentPos++
 	}(key)
 
-	return &LogFile{key.Key, self.bucket}
+	return &LogFile{key.Key, self.crawler.bucket}
 }
 
 func (self *s3iterator) End() bool {
-	if self.crawler == nil {
-		self.initCrawler()
-	}
-
-	if !self.crawler.IsTruncated &&
-		self.currentPos >= self.crawler.MaxKeys {
+	if self.crawler.currentPos >= self.crawler.List.MaxKeys {
 		return true
-	} else if self.crawler.MaxKeys == 0 {
+	} else if self.crawler.List.MaxKeys == 0 {
 		return true
 	}
 
@@ -100,9 +91,7 @@ func getBucket(cfg *config) *s3.Bucket {
 }
 
 func NewIterator(prefix string, marker string, cfg *config) *s3iterator {
-	bucket := getBucket(cfg)
-
-	return &s3iterator{
-		bucket, prefix, marker, LIMIT, STARTPOS, nil,
-	}
+	iter := &s3iterator{prefix, cfg, nil, false}
+	iter.initCrawler(marker)
+	return iter
 }

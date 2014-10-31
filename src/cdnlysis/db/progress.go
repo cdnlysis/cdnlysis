@@ -1,12 +1,18 @@
 package db
 
-import tiedot "github.com/HouzuoGuo/tiedot/db"
+import (
+	"log"
+
+	tiedot "github.com/HouzuoGuo/tiedot/db"
+)
 
 var cachedDB tiedot.DB
 
-const collectionName = "sync_progress"
+const pathCollection = "path_progress"
+const markerCollection = "marker_progress"
 
-var indexes = []string{"prefix", "marker"}
+var markerIndices = []string{"prefix", "marker"}
+var pathIndices = []string{"path"}
 
 func getDB() *tiedot.DB {
 	return &cachedDB
@@ -14,7 +20,7 @@ func getDB() *tiedot.DB {
 
 func LastMarker(Prefix string) string {
 	syncDB := getDB()
-	coll := syncDB.Use(collectionName)
+	coll := syncDB.Use(markerCollection)
 
 	query := map[string]interface{}{
 		"eq": Prefix,
@@ -37,9 +43,36 @@ func LastMarker(Prefix string) string {
 	return ""
 }
 
+func HasVisited(path string) bool {
+	syncDB := getDB()
+	coll := syncDB.Use(pathCollection)
+
+	query := map[string]interface{}{
+		"eq": path,
+		"in": []interface{}{"path"},
+	}
+
+	queryResult := make(map[int]struct{})
+	if err := tiedot.EvalQuery(query, coll, &queryResult); err != nil {
+		log.Println(err)
+		return false
+	}
+
+	return len(queryResult) > 0
+}
+
+func SetVisited(path string) {
+	syncDB := getDB()
+	coll := syncDB.Use(pathCollection)
+	coll.Insert(map[string]interface{}{
+		"path":    path,
+		"visited": true,
+	})
+}
+
 func Update(Prefix string, Marker string) {
 	syncDB := getDB()
-	coll := syncDB.Use(collectionName)
+	coll := syncDB.Use(markerCollection)
 
 	query := map[string]interface{}{
 		"eq": Prefix,
@@ -79,25 +112,32 @@ func InitDB(path string) {
 		panic(err)
 	}
 
-	var hasCol bool
+	var hasMarkerCol, hasPathCol bool
+
 	for _, name := range syncDB.AllCols() {
-		if name == collectionName {
-			hasCol = true
-			break
+		if name == markerCollection {
+			hasMarkerCol = true
+		} else if name == pathCollection {
+			hasPathCol = true
 		}
 	}
 
-	if !hasCol {
-		if err := syncDB.Create(collectionName); err != nil {
+	if !hasMarkerCol {
+		if err := syncDB.Create(markerCollection); err != nil {
+			panic(err)
+		}
+	}
+
+	if !hasPathCol {
+		if err := syncDB.Create(pathCollection); err != nil {
 			panic(err)
 		}
 	}
 
 	// ****** Index *********
 
-	coll := syncDB.Use(collectionName)
-
-	for _, indexPath := range indexes {
+	coll := syncDB.Use(markerCollection)
+	for _, indexPath := range markerIndices {
 		var indexFound bool
 		for _, path := range coll.AllIndexes() {
 			if path[0] == indexPath {
@@ -108,6 +148,25 @@ func InitDB(path string) {
 
 		if !indexFound {
 			if err := coll.Index([]string{indexPath}); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// ************** Path Indices **************
+
+	path_coll := syncDB.Use(pathCollection)
+	for _, indexPath := range pathIndices {
+		var indexFound bool
+		for _, path := range path_coll.AllIndexes() {
+			if path[0] == indexPath {
+				indexFound = true
+				break
+			}
+		}
+
+		if !indexFound {
+			if err := path_coll.Index([]string{indexPath}); err != nil {
 				panic(err)
 			}
 		}

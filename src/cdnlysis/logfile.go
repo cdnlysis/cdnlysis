@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"io"
 	"log"
+	"regexp"
+	"strings"
 
 	influxdb "github.com/influxdb/influxdb/client"
 	"labix.org/v2/mgo"
@@ -13,12 +16,12 @@ import (
 func addToInflux(series *influxdb.Series) {
 	conn, err := influxdb.New(&Settings.Influx)
 	if err != nil {
-		log.Println(err)
+		log.Println("Cannot connect to Influx", err)
 		return
 	}
 
 	if err := conn.WriteSeries([]*influxdb.Series{series}); err != nil {
-		log.Println(err)
+		log.Println("Cannot add to Influx", err)
 		return
 	}
 }
@@ -39,7 +42,7 @@ func addToMongo(records *mongoSeries) {
 
 	session, err := mgo.DialWithInfo(&info)
 	if err != nil {
-		log.Println(err)
+		log.Println("Cannot connect to Mongo:", err)
 		return
 	}
 
@@ -53,22 +56,38 @@ func addToMongo(records *mongoSeries) {
 
 	err = coll.Insert(interfaceSlice...)
 	if err != nil {
-		log.Println(err)
+		log.Println("Cannot Insert document in collection", err)
 	}
 }
 
+func cleanString(msg string) string {
+	if strings.HasSuffix(msg, "\n") {
+		return msg[:len(msg)-1]
+	}
+
+	return msg
+}
+
+func findColumns(msg string) []string {
+	re_head := regexp.MustCompile("#Fields:\\s+")
+	re_slug := regexp.MustCompile("[^\\w\\s]")
+
+	msg = re_head.ReplaceAllString(msg, "")
+	msg = strings.ToLower(re_slug.ReplaceAllString(msg, UNDERSCORE))
+	return strings.Split(msg, SPACE)
+}
+
 func processFile(file *LogFile) {
-	reader, err := file.GetReader()
+	buff, err := file.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("Cannot GetFIle", err)
 		return
 	}
 
-	defer reader.Close()
-
-	gzipReader, err2 := gzip.NewReader(reader)
+	b := bytes.NewReader(buff)
+	gzipReader, err2 := gzip.NewReader(b)
 	if err2 != nil {
-		log.Println(err2)
+		log.Println("Cannot make GZIP Reader", err2)
 		return
 	}
 
@@ -77,7 +96,9 @@ func processFile(file *LogFile) {
 	ix := 0
 	bufReader := bufio.NewReader(gzipReader)
 
-	series := influxdb.Series{Settings.Logs.Prefix, COLUMNS, nil}
+	var columns []string
+
+	series := influxdb.Series{Settings.Logs.Prefix, columns, nil}
 	mongo_records := mongoSeries{}
 
 	for {
@@ -89,21 +110,29 @@ func processFile(file *LogFile) {
 		} else if err != nil {
 			break
 			// if you return error
+		}
+
+		log_record = cleanString(log_record)
+
+		if ix == 1 {
+			columns = findColumns(log_record)
 		} else if ix > 2 {
 			// Log Entries
 
 			if Settings.Backends.Influx {
-				data := InfluxRecord(log_record)
+				data := InfluxRecord(columns, log_record)
 				series.Points = append(series.Points, data)
 			}
 
 			if Settings.Backends.Mongo {
-				mongo_records = append(mongo_records, MongoRecord(log_record))
+				data := MongoRecord(columns, log_record)
+				mongo_records = append(mongo_records, data)
 			}
 		}
 	}
 
 	if Settings.Backends.Mongo {
+		series.Columns = columns
 		addToInflux(&series)
 	}
 

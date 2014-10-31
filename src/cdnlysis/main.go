@@ -10,21 +10,19 @@ import (
 
 var Settings config
 
-func main() {
-	cliArgs(&Settings)
-
-	db.InitDB(Settings.SyncProgress.Path)
-
+func recursivelyWalk(marker *string) {
 	var wg sync.WaitGroup
 
-	marker := db.LastMarker(Settings.S3.Prefix)
+	it := NewIterator(Settings.S3.Prefix, *marker, &Settings)
 
-	log.Println(marker)
-
-	for it := NewIterator(Settings.S3.Prefix, marker, &Settings); !it.End(); {
+	for !it.End() {
 		file := it.Next()
+		if db.HasVisited(file.Path) {
+			log.Println("File", file.Path, "has been processed already")
+			continue
+		}
 
-		db.Update(Settings.S3.Prefix, file.Path)
+		*marker = file.Path
 
 		wg.Add(1)
 
@@ -32,8 +30,31 @@ func main() {
 			defer wg.Done()
 			log.Println("Processing file " + file.Path)
 			processFile(file)
+			db.SetVisited(file.Path)
 		}(&wg, file)
 	}
 
 	wg.Wait()
+
+	db.Update(Settings.S3.Prefix, *marker)
+
+	if it.IsTruncated {
+		log.Println("should fetch more")
+		recursivelyWalk(marker)
+	}
+
+}
+
+func main() {
+	cliArgs(&Settings)
+
+	db.InitDB(Settings.SyncProgress.Path)
+
+	marker := db.LastMarker(Settings.S3.Prefix)
+
+	if marker != "" {
+		log.Println("Resuming state from:", marker)
+	}
+
+	recursivelyWalk(&marker)
 }

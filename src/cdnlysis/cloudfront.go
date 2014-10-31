@@ -11,28 +11,8 @@ import (
 )
 
 const TAB = "\t"
-
-var COLUMNS = []string{
-	"date",
-	"time",
-	"x_edge_location",
-	"sc_bytes",
-	"c_ip",
-	"cs_method",
-	"cs_host",
-	"cs_uri_stem",
-	"sc_status",
-	"cs_referer",
-	"cs_user_agent",
-	"cs_uri_query",
-	"cs_cookie",
-	"x_edge_result_type",
-	"x_edge_request_id",
-	"x_host_header",
-	"cs_protocol",
-	"cs_bytes",
-	"time_taken",
-}
+const SPACE = " "
+const UNDERSCORE = "_"
 
 type LogEntry struct {
 	Date           string  `bson:"date" json:"date"`
@@ -56,18 +36,14 @@ type LogEntry struct {
 	TimeTaken      float64 `bson:"time_taken" json:"time_taken,string"`
 }
 
-func InfluxRecord(log_record string) []interface{} {
-	if strings.HasSuffix(log_record, "\n") {
-		log_record = log_record[:len(log_record)-1]
-	}
-
+func InfluxRecord(columns []string, log_record string) []interface{} {
 	split := strings.Split(log_record, TAB)
 
 	record := []interface{}{}
 
 	datetime := ""
 
-	for ix, item := range COLUMNS {
+	for ix, item := range columns {
 		val := split[ix]
 
 		if item == "date" {
@@ -79,7 +55,7 @@ func InfluxRecord(log_record string) []interface{} {
 			item == "cs_uri_query" {
 			unescaped, err := url.QueryUnescape(val)
 			if err != nil {
-				log.Println(err)
+				log.Println("Cannot unescape value", err)
 			}
 
 			record = append(record, unescaped)
@@ -109,17 +85,13 @@ func InfluxRecord(log_record string) []interface{} {
 	return record
 }
 
-func MongoRecord(log_record string) *LogEntry {
-	if strings.HasSuffix(log_record, "\n") {
-		log_record = log_record[:len(log_record)-1]
-	}
-
+func MongoRecord(columns []string, log_record string) *LogEntry {
 	split := strings.Split(log_record, TAB)
 
 	json_string := `{`
 
 	var hasElem bool
-	for ix, item := range COLUMNS {
+	for ix, item := range columns {
 		if hasElem {
 			json_string += ", "
 		} else {
