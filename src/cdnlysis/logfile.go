@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"cdnlysis/backends"
+
 	influxdb "github.com/influxdb/influxdb/client"
 	"labix.org/v2/mgo"
 )
@@ -26,7 +28,7 @@ func addToInflux(series *influxdb.Series) {
 	}
 }
 
-type mongoSeries []*LogEntry
+type mongoSeries []*backends.LogEntry
 
 func addToMongo(records *mongoSeries) {
 
@@ -73,8 +75,8 @@ func findColumns(msg string) []string {
 	re_slug := regexp.MustCompile("[^\\w\\s]")
 
 	msg = re_head.ReplaceAllString(msg, "")
-	msg = strings.ToLower(re_slug.ReplaceAllString(msg, UNDERSCORE))
-	return strings.Split(msg, SPACE)
+	msg = strings.ToLower(re_slug.ReplaceAllString(msg, backends.UNDERSCORE))
+	return strings.Split(msg, backends.SPACE)
 }
 
 func processFile(file *LogFile) bool {
@@ -120,12 +122,12 @@ func processFile(file *LogFile) bool {
 			// Log Entries
 
 			if Settings.Backends.Influx {
-				data := InfluxRecord(columns, log_record)
+				data := backends.InfluxRecord(columns, log_record)
 				series.Points = append(series.Points, data)
 			}
 
 			if Settings.Backends.Mongo {
-				data := MongoRecord(columns, log_record)
+				data := backends.MongoRecord(columns, log_record)
 				mongo_records = append(mongo_records, data)
 			}
 		}

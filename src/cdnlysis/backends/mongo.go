@@ -1,18 +1,6 @@
-package main
+package backends
 
-import (
-	"log"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
-
-	utils "github.com/Simversity/gottp/utils"
-)
-
-const TAB = "\t"
-const SPACE = " "
-const UNDERSCORE = "_"
+import utils "github.com/Simversity/gottp/utils"
 
 type LogEntry struct {
 	Date           string  `bson:"date" json:"date"`
@@ -36,64 +24,15 @@ type LogEntry struct {
 	TimeTaken      float64 `bson:"time_taken" json:"time_taken,string"`
 }
 
-func InfluxRecord(columns []string, log_record string) []interface{} {
-	split := strings.Split(log_record, TAB)
-
-	record := []interface{}{}
-
-	datetime := ""
-
-	for ix, item := range columns {
-		val := split[ix]
-
-		if item == "date" {
-			datetime += val
-		}
-
-		if item == "cs_referer" ||
-			item == "cs_user_agent" ||
-			item == "cs_uri_query" {
-			unescaped, err := url.QueryUnescape(val)
-			if err != nil {
-				log.Println("Cannot unescape value", err)
-			}
-
-			record = append(record, unescaped)
-			continue
-		}
-
-		if item == "sc_bytes" ||
-			item == "sc_status" ||
-			item == "cs_bytes" {
-			conv, _ := strconv.ParseInt(val, 10, 64)
-			record = append(record, conv)
-
-		} else if item == "time_taken" {
-			conv, _ := strconv.ParseFloat(val, 64)
-			record = append(record, conv)
-
-		} else if item == "time" {
-			datetime += "T" + val + "+00:00"
-			t, _ := time.Parse(time.RFC3339, datetime)
-			record = append(record, t.Unix()*1000)
-
-		} else {
-			record = append(record, val)
-		}
-	}
-
-	return record
-}
-
 func MongoRecord(columns []string, log_record string) *LogEntry {
-	split := strings.Split(log_record, TAB)
+	split := parseLogRecord(log_record)
 
 	json_string := `{`
 
 	var hasElem bool
 	for ix, item := range columns {
 		if hasElem {
-			json_string += ", "
+			json_string += `, `
 		} else {
 			hasElem = true
 		}
