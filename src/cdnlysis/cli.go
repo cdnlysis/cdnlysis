@@ -18,8 +18,11 @@ func cliArgs(cfg *config) {
 		"Directory prefix to process the logs for",
 	)
 
-	args["config"] = configPtr
-	args["prefix"] = prefixPtr
+	var verbose = flag.Bool(
+		"v",
+		true,
+		"Display activity progress. Errors are not supressed",
+	)
 
 	//Must be called after all flags are defined and
 	//before flags are accessed by the program.
@@ -37,4 +40,5 @@ func cliArgs(cfg *config) {
 		cfg.S3.Prefix = *prefix
 	}
 
+	cfg.Verbose = *verbose
 }

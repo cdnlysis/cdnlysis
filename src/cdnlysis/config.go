@@ -8,6 +8,8 @@ import (
 type config struct {
 	Influx influxdb.ClientConfig
 
+	Verbose bool
+
 	Backends struct {
 		Influx bool
 		Mongo  bool
