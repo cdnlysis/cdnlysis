@@ -116,7 +116,7 @@ func processFile(file *LogFile) bool {
 
 		log_record = cleanString(log_record)
 
-		if ix == 1 {
+		if ix == 2 {
 			columns = findColumns(log_record)
 		} else if ix > 2 {
 			// Log Entries
