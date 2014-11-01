@@ -1,6 +1,11 @@
 package backends
 
-import utils "github.com/Simversity/gottp/utils"
+import (
+	"log"
+	"net/url"
+
+	utils "github.com/Simversity/gottp/utils"
+)
 
 type LogEntry struct {
 	Date           string  `bson:"date" json:"date"`
@@ -24,6 +29,24 @@ type LogEntry struct {
 	TimeTaken      float64 `bson:"time_taken" json:"time_taken,string"`
 }
 
+func (self *LogEntry) transform() {
+	var err error
+	self.Referer, err = url.QueryUnescape(self.Referer)
+	if err != nil {
+		log.Println("Cannot unescape Referer", err)
+	}
+
+	self.UserAgent, err = url.QueryUnescape(self.UserAgent)
+	if err != nil {
+		log.Println("Cannot unescape UserAgent", err)
+	}
+
+	self.UriQuery, err = url.QueryUnescape(self.UriQuery)
+	if err != nil {
+		log.Println("Cannot unescape UriQuery", err)
+	}
+}
+
 func MongoRecord(columns []string, log_record string) *LogEntry {
 	split := parseLogRecord(log_record)
 
@@ -45,5 +68,8 @@ func MongoRecord(columns []string, log_record string) *LogEntry {
 
 	var entry LogEntry
 	utils.Decoder([]byte(json_string), &entry)
+
+	entry.transform()
+
 	return &entry
 }
