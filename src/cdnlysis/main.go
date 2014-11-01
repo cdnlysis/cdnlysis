@@ -17,12 +17,12 @@ func recursivelyWalk(marker *string) {
 
 	for !it.End() {
 		file := it.Next()
+		*marker = file.Path
+
 		if db.HasVisited(file.Path) {
 			log.Println("File", file.Path, "has been processed already")
 			continue
 		}
-
-		*marker = file.Path
 
 		wg.Add(1)
 
