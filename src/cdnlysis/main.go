@@ -20,7 +20,9 @@ func recursivelyWalk(marker *string) {
 		*marker = file.Path
 
 		if db.HasVisited(file.Path) {
-			log.Println("File", file.Path, "has been processed already")
+			if Settings.Verbose {
+				log.Println("File", file.Path, "has been processed already")
+			}
 			continue
 		}
 
@@ -28,7 +30,11 @@ func recursivelyWalk(marker *string) {
 
 		go func(wg *sync.WaitGroup, file *LogFile) {
 			defer wg.Done()
-			log.Println("Processing file " + file.Path)
+
+			if Settings.Verbose {
+				log.Println("Processing file " + file.Path)
+			}
+
 			ret := processFile(file)
 			if ret == true {
 				db.SetVisited(file.Path)
@@ -41,7 +47,9 @@ func recursivelyWalk(marker *string) {
 	db.Update(Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		log.Println("should fetch more")
+		if Settings.Verbose {
+			log.Println("should fetch more")
+		}
 		recursivelyWalk(marker)
 	}
 
@@ -54,7 +62,7 @@ func main() {
 
 	marker := db.LastMarker(Settings.S3.Prefix)
 
-	if marker != "" {
+	if marker != "" && Settings.Verbose {
 		log.Println("Resuming state from:", marker)
 	}
 
