@@ -6,15 +6,13 @@ import (
 )
 
 func cliArgs(cfg *config) {
-	args := map[string]*string{}
-
-	configPtr := flag.String(
+	var config = flag.String(
 		"config",
 		"",
 		"Config [.ini format] file to Load the configurations from",
 	)
 
-	prefixPtr := flag.String(
+	var prefix = flag.String(
 		"prefix",
 		"",
 		"Directory prefix to process the logs for",
@@ -28,15 +26,15 @@ func cliArgs(cfg *config) {
 
 	flag.Parse()
 
-	if *args["config"] == "" {
+	if *config == "" {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	cfg.MakeConfig(*args["config"])
+	cfg.MakeConfig(*config)
 
-	if *args["prefix"] != "" {
-		cfg.S3.Prefix = *args["prefix"]
+	if *prefix != "" {
+		cfg.S3.Prefix = *prefix
 	}
 
 }
