@@ -1,11 +1,15 @@
-package main
+package conf
 
 import (
 	"flag"
 	"os"
 )
 
-func cliArgs(cfg *config) {
+var Settings *Config
+
+func CliArgs() {
+	var cfg Config
+
 	var config = flag.String(
 		"config",
 		"",
@@ -41,4 +45,5 @@ func cliArgs(cfg *config) {
 	}
 
 	cfg.Verbose = *verbose
+	Settings = &cfg
 }

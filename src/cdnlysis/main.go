@@ -3,66 +3,119 @@
 package main
 
 import (
+	"cdnlysis/backends"
+	"cdnlysis/conf"
 	"cdnlysis/db"
+	"cdnlysis/pipeline"
 	"log"
 	"sync"
 )
 
-var Settings config
+const THREADS = 4
 
-func recursivelyWalk(marker *string) {
-	var wg sync.WaitGroup
-
-	it := NewIterator(Settings.S3.Prefix, *marker, &Settings)
-
-	for !it.End() {
-		file := it.Next()
-		*marker = file.Path
-
+func transform(
+	files <-chan *pipeline.LogFile,
+	influxSink chan<- *backends.InfluxRecord,
+	mongoSink chan<- *backends.MongoRecord,
+) {
+	for file := range files {
 		if db.HasVisited(file.Path) {
-			if Settings.Verbose {
-				log.Println("File", file.Path, "has been processed already")
-			}
+			log.Println("[Already Processed]", file.Path)
 			continue
 		}
 
-		wg.Add(1)
-
-		go func(wg *sync.WaitGroup, file *LogFile) {
-			defer wg.Done()
-
-			if Settings.Verbose {
-				log.Println("Processing file " + file.Path)
-			}
-
-			ret := processFile(file)
-			if ret == true {
-				db.SetVisited(file.Path)
-			}
-		}(&wg, file)
+		log.Println("[Dispatch]", file.Path)
+		pipeline.Transform(file, influxSink, mongoSink)
+		db.SetVisited(file.Path)
 	}
 
-	wg.Wait()
+}
 
-	db.Update(Settings.S3.Prefix, *marker)
+func influxAggregator(
+	influxSink <-chan *backends.InfluxRecord,
+	rg *sync.WaitGroup,
+) {
+	for v := range influxSink {
+		rg.Add(1)
+		go func(rec *backends.InfluxRecord) {
+			pipeline.AddToInflux(rec)
+			rg.Done()
+		}(v)
+	}
+}
+
+func mongoAggregator(
+	mongoSink <-chan *backends.MongoRecord,
+	rg *sync.WaitGroup,
+) {
+
+	mongoRecords := []interface{}{}
+	rg.Add(1)
+
+	for v := range mongoSink {
+		mongoRecords = append(mongoRecords, v)
+	}
+
+	if len(mongoRecords) > 0 {
+		pipeline.AddToMongo(mongoRecords)
+	}
+
+	rg.Done()
+}
+
+func recursivelyWalk(marker *string) {
+	it := pipeline.NewIter(*marker)
+
+	incomingFiles := it.Produce(marker)
+
+	var workerWaiter sync.WaitGroup
+
+	//Channel to receive all values that need to be added to InfluxDB
+	influxSink := make(chan *backends.InfluxRecord)
+
+	//Channel to receive records to be added to MongoDB
+	mongoSink := make(chan *backends.MongoRecord)
+
+	workerWaiter.Add(THREADS)
+
+	for p := 0; p < THREADS; p++ {
+		go func() {
+			transform(incomingFiles, influxSink, mongoSink)
+			workerWaiter.Done()
+		}()
+	}
+
+	var resultGroup sync.WaitGroup
+
+	go influxAggregator(influxSink, &resultGroup)
+	go mongoAggregator(mongoSink, &resultGroup)
+
+	workerWaiter.Wait()
+	close(influxSink)
+	close(mongoSink)
+	resultGroup.Wait()
+
+	//db.Update(conf.Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		if Settings.Verbose {
+		if conf.Settings.Verbose {
 			log.Println("should fetch more")
 		}
 		recursivelyWalk(marker)
+	} else {
+		log.Println("Does not have more values")
 	}
 
 }
 
 func main() {
-	cliArgs(&Settings)
+	conf.CliArgs()
 
-	db.InitDB(Settings.SyncProgress.Path)
+	db.InitDB(conf.Settings.SyncProgress.Path)
 
-	marker := db.LastMarker(Settings.S3.Prefix)
+	marker := db.LastMarker(conf.Settings.S3.Prefix)
 
-	if marker != "" && Settings.Verbose {
+	if marker != "" && conf.Settings.Verbose {
 		log.Println("Resuming state from:", marker)
 	}
 

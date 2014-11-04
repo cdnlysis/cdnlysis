@@ -5,9 +5,13 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	influxdb "github.com/influxdb/influxdb/client"
 )
 
-func InfluxRecord(columns []string, log_record string) []interface{} {
+type InfluxRecord influxdb.Series
+
+func MakeInfluxRecord(columns []string, log_record string) []interface{} {
 	split := parseLogRecord(log_record)
 	record := []interface{}{}
 

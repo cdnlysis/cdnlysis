@@ -7,7 +7,7 @@ import (
 	utils "github.com/Simversity/gottp/utils"
 )
 
-type LogEntry struct {
+type MongoRecord struct {
 	Date           string  `bson:"date" json:"date"`
 	Time           string  `bson:"time" json:"time"`
 	EdgeLocation   string  `bson:"x_edge_location" json:"x_edge_location"`
@@ -29,7 +29,7 @@ type LogEntry struct {
 	TimeTaken      float64 `bson:"time_taken" json:"time_taken,string"`
 }
 
-func (self *LogEntry) transform() {
+func (self *MongoRecord) transform() {
 	var err error
 	self.Referer, err = url.QueryUnescape(self.Referer)
 	if err != nil {
@@ -47,7 +47,7 @@ func (self *LogEntry) transform() {
 	}
 }
 
-func MongoRecord(columns []string, log_record string) *LogEntry {
+func MakeMongoRecord(columns []string, log_record string) *MongoRecord {
 	split := parseLogRecord(log_record)
 
 	json_string := `{`
@@ -66,7 +66,7 @@ func MongoRecord(columns []string, log_record string) *LogEntry {
 
 	json_string += `}`
 
-	var entry LogEntry
+	var entry MongoRecord
 	utils.Decoder([]byte(json_string), &entry)
 
 	entry.transform()

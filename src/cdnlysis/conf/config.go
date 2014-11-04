@@ -1,11 +1,11 @@
-package main
+package conf
 
 import (
 	utils "github.com/Simversity/gottp/utils"
 	influxdb "github.com/influxdb/influxdb/client"
 )
 
-type config struct {
+type Config struct {
 	Influx influxdb.ClientConfig
 
 	Verbose bool
@@ -74,7 +74,7 @@ Region = "us-east-1"
 Prefix="cdn"
 Location="/tmp/"`
 
-func (self *config) MakeConfig(configPath string) {
+func (self *Config) MakeConfig(configPath string) {
 	utils.ReadConfig(baseConfig, self)
 	if configPath != "" {
 		utils.MakeConfig(configPath, self)
