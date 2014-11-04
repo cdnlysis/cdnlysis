@@ -11,8 +11,6 @@ import (
 	"sync"
 )
 
-const THREADS = 4
-
 func transform(
 	files <-chan *pipeline.LogFile,
 	influxSink chan<- *backends.InfluxRecord,
@@ -76,9 +74,9 @@ func recursivelyWalk(marker *string) {
 	//Channel to receive records to be added to MongoDB
 	mongoSink := make(chan *backends.MongoRecord)
 
-	workerWaiter.Add(THREADS)
+	workerWaiter.Add(conf.Settings.Engine.Threads)
 
-	for p := 0; p < THREADS; p++ {
+	for p := 0; p < conf.Settings.Engine.Threads; p++ {
 		go func() {
 			transform(incomingFiles, influxSink, mongoSink)
 			workerWaiter.Done()
@@ -95,15 +93,17 @@ func recursivelyWalk(marker *string) {
 	close(mongoSink)
 	resultGroup.Wait()
 
-	//db.Update(conf.Settings.S3.Prefix, *marker)
+	db.Update(conf.Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		if conf.Settings.Verbose {
+		if conf.Settings.Engine.Verbose {
 			log.Println("should fetch more")
 		}
 		recursivelyWalk(marker)
 	} else {
-		log.Println("Does not have more values")
+		if conf.Settings.Engine.Verbose {
+			log.Println("Does not have more values")
+		}
 	}
 
 }
@@ -115,7 +115,7 @@ func main() {
 
 	marker := db.LastMarker(conf.Settings.S3.Prefix)
 
-	if marker != "" && conf.Settings.Verbose {
+	if marker != "" && conf.Settings.Engine.Verbose {
 		log.Println("Resuming state from:", marker)
 	}
 

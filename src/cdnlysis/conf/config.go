@@ -8,7 +8,10 @@ import (
 type Config struct {
 	Influx influxdb.ClientConfig
 
-	Verbose bool
+	Engine struct {
+		Verbose bool
+		Threads int
+	}
 
 	Backends struct {
 		Influx bool
@@ -45,6 +48,10 @@ const baseConfig = `;Sample Configuration File
 [Backends]
 Influx=true
 Mongo=false
+
+[Engine]
+Verbose=true
+Threads=10
 
 [Influx]
 Host="127.0.0.1:8086"

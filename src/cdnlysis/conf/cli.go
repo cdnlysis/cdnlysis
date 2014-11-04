@@ -44,6 +44,6 @@ func CliArgs() {
 		cfg.S3.Prefix = *prefix
 	}
 
-	cfg.Verbose = *verbose
+	cfg.Engine.Verbose = *verbose
 	Settings = &cfg
 }
