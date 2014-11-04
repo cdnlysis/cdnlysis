@@ -160,6 +160,9 @@ func recursivelyWalk(marker *string) {
 func main() {
 	conf.CliArgs()
 
+	//TODO: Disable Mongo because of the timeout error.
+	conf.Settings.Backends.Mongo = false
+
 	db.InitDB(conf.Settings.SyncProgress.Path)
 
 	marker := db.LastMarker(conf.Settings.S3.Prefix)
