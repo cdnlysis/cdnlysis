@@ -152,7 +152,6 @@ func main() {
 	db.InitDB(conf.Settings.SyncProgress.Path)
 
 	marker := db.LastMarker(conf.Settings.S3.Prefix)
-	marker = ""
 
 	if marker != "" && conf.Settings.Engine.Verbose {
 		log.Println("Resuming state from:", marker)
