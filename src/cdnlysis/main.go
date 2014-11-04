@@ -23,8 +23,6 @@ func transform(
 			errc <- &pipeline.TransformError{
 				file.Path, errors.New("Already Processed"),
 			}
-
-			//log.Println(file.LogIdent(), "[Pipeline] Already processed")
 			continue
 		}
 
@@ -76,20 +74,29 @@ func recursivelyWalk(marker *string) {
 	influxSink := make(chan *backends.InfluxRecord)
 
 	//Channel to receive records to be added to MongoDB
-	var err error
-	err = pipeline.RefreshInfluxSession()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	err = pipeline.RefreshMongoSession()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
 	mongoSink := make(chan *backends.MongoRecord)
+
+	WAIT := 1 //How many channels are waiting
+
+	var err error
+
+	if conf.Settings.Backends.Influx {
+		WAIT++
+		err = pipeline.RefreshInfluxSession()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+
+	if conf.Settings.Backends.Mongo {
+		WAIT++
+		err = pipeline.RefreshMongoSession()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
 
 	workerWaiter.Add(conf.Settings.Engine.Threads)
 
@@ -101,7 +108,7 @@ func recursivelyWalk(marker *string) {
 	}
 
 	var resultGroup sync.WaitGroup
-	resultGroup.Add(3)
+	resultGroup.Add(WAIT)
 
 	go func() {
 		log.Println("Waiting for Errors")
@@ -111,17 +118,21 @@ func recursivelyWalk(marker *string) {
 		resultGroup.Done()
 	}()
 
-	go func() {
-		log.Println("Waiting for Influxers")
-		influxAggregator(influxSink)
-		resultGroup.Done()
-	}()
+	if conf.Settings.Backends.Influx {
+		go func() {
+			log.Println("Waiting for Influxers")
+			influxAggregator(influxSink)
+			resultGroup.Done()
+		}()
+	}
 
-	go func() {
-		log.Println("Waiting for Mongo")
-		mongoAggregator(mongoSink)
-		resultGroup.Done()
-	}()
+	if conf.Settings.Backends.Mongo {
+		go func() {
+			log.Println("Waiting for Mongo")
+			mongoAggregator(mongoSink)
+			resultGroup.Done()
+		}()
+	}
 
 	workerWaiter.Wait()
 
