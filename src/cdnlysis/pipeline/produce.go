@@ -3,6 +3,7 @@ package pipeline
 import (
 	"io"
 	"log"
+	"strconv"
 
 	"cdnlysis/conf"
 
@@ -10,7 +11,7 @@ import (
 	"launchpad.net/goamz/s3"
 )
 
-const LIMIT = 1000
+const LIMIT = 500
 const STARTPOS = 0
 
 func getRegion() aws.Region {
@@ -53,24 +54,36 @@ func (self *Iterator) init(marker string) {
 }
 
 func (self *Iterator) Produce(marker *string) <-chan *LogFile {
+	log.Println("[Producer] Fetching", LIMIT, "objects")
 	self.init(*marker)
 
 	files := make(chan *LogFile)
+	count := len(self.crawler.List.Contents)
 
-	go func() {
+	log.Println("[Producer] Dispatching", count, "objects")
+
+	go func(count int) {
 		defer close(files)
-		for _, file := range self.crawler.List.Contents {
-			files <- &LogFile{file.Key, self.crawler.bucket}
+		for ix, file := range self.crawler.List.Contents {
+			logfile := LogFile{file.Key, self.crawler.bucket, ix, count}
+			log.Println(logfile.LogIdent(), "[Producer] Dispatching")
+			files <- &logfile
 			*marker = file.Key
 		}
-	}()
+	}(count)
 
 	return files
 }
 
 type LogFile struct {
-	Path   string
-	Bucket *s3.Bucket
+	Path      string
+	Bucket    *s3.Bucket
+	Sequence  int
+	BatchSize int
+}
+
+func (self *LogFile) LogIdent() string {
+	return strconv.Itoa(self.Sequence) + "/" + strconv.Itoa(self.BatchSize) + " " + self.Path
 }
 
 func (self *LogFile) Get() (data []byte, err error) {

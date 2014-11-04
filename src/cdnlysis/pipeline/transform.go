@@ -30,22 +30,32 @@ func findColumns(msg string) []string {
 	return strings.Split(msg, backends.SPACE)
 }
 
+type TransformError struct {
+	Path string
+	Err  error
+}
+
 func Transform(
 	file *LogFile,
 	influxSink chan<- *backends.InfluxRecord,
 	mongoSink chan<- *backends.MongoRecord,
+	errc chan<- *TransformError,
 ) {
+
+	log.Println(file.LogIdent(), "[Fetch]")
 
 	buff, err := file.Get()
 	if err != nil {
-		log.Println(file.Path, "[Error] Cannot open File", err)
+		log.Println(file.LogIdent(), "[Error] Cannot open File", err)
+		errc <- &TransformError{file.Path, err}
 		return
 	}
 
 	b := bytes.NewReader(buff)
 	gzipReader, err2 := gzip.NewReader(b)
 	if err2 != nil {
-		log.Println(file.Path, "[Error] Cannot open GZIP", err2)
+		log.Println(file.LogIdent(), "[Error] Cannot open GZIP", err2)
+		errc <- &TransformError{file.Path, err2}
 		return
 	}
 
