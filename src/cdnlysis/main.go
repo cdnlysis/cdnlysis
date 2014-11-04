@@ -29,36 +29,33 @@ func transform(
 
 }
 
-func influxAggregator(
-	influxSink <-chan *backends.InfluxRecord,
-	rg *sync.WaitGroup,
-) {
+func influxAggregator(influxSink <-chan *backends.InfluxRecord) {
+	var wg sync.WaitGroup
+
 	for v := range influxSink {
-		rg.Add(1)
+		wg.Add(1)
 		go func(rec *backends.InfluxRecord) {
 			pipeline.AddToInflux(rec)
-			rg.Done()
+			wg.Done()
 		}(v)
 	}
+
+	wg.Wait()
 }
 
-func mongoAggregator(
-	mongoSink <-chan *backends.MongoRecord,
-	rg *sync.WaitGroup,
-) {
-
-	mongoRecords := []interface{}{}
-	rg.Add(1)
+func mongoAggregator(mongoSink <-chan *backends.MongoRecord) {
+	var wg sync.WaitGroup
 
 	for v := range mongoSink {
-		mongoRecords = append(mongoRecords, v)
+		wg.Add(1)
+		go func(rec *backends.MongoRecord) {
+			mongoRecords := []interface{}{rec}
+			pipeline.AddToMongo(mongoRecords)
+			wg.Done()
+		}(v)
 	}
 
-	if len(mongoRecords) > 0 {
-		pipeline.AddToMongo(mongoRecords)
-	}
-
-	rg.Done()
+	wg.Wait()
 }
 
 func recursivelyWalk(marker *string) {
@@ -83,10 +80,18 @@ func recursivelyWalk(marker *string) {
 		}()
 	}
 
-	var resultGroup sync.WaitGroup
+	var resultGroup *sync.WaitGroup
+	resultGroup.Add(2)
 
-	go influxAggregator(influxSink, &resultGroup)
-	go mongoAggregator(mongoSink, &resultGroup)
+	go func() {
+		influxAggregator(influxSink)
+		resultGroup.Done()
+	}()
+
+	go func() {
+		mongoAggregator(mongoSink)
+		resultGroup.Done()
+	}()
 
 	workerWaiter.Wait()
 	close(influxSink)
