@@ -1,0 +1,19 @@
+language: go
+go:
+  - tip
+before_install:
+  - sudo apt-get update -qq > apt-get.out 2>&1  || (cat apt-get.out && exit 1)
+  - sudo apt-get install bzr mercurial git -qq > apt-get.out 2>&1 || (cat apt-get.out && exit 1)
+install:
+  - go get labix.org/v2/mgo
+  - go get code.google.com/p/gcfg
+  - go get launchpad.net/goamz/s3
+  - go get github.com/Simversity/gottp
+  - go get github.com/influxdb/influxdb/client
+  - go get github.com/HouzuoGuo/tiedot
+notifications:
+  email:
+    recipients:
+      - piyush@piyushverma.net
+    on_success: change
+    on_failure: always
