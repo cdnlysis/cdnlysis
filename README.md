@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.org/meson10/cdnlysis.svg?branch=dev)
+
 cdnlysis
 ========
 
