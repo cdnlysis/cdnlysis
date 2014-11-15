@@ -15,7 +15,8 @@ install:
   - go get github.com/HouzuoGuo/tiedot
 
 script:
-  - export GOPATH="$HOME/gopath/src/github.com/meson10/cdnlysis"
+  - export GOPATH="$HOME/gopath/src/github.com/meson10/cdnlysis" && exit 1
+  - cd $GOPATH && exit 1
   - go build cdnlysis
 
 notifications:
