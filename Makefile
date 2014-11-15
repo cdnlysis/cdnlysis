@@ -1,10 +1,7 @@
 build: deps
 	go build cdnlysis
 
-path:
-	export GOPATH=`pwd`
-
-deps: path
+deps:
 	go get launchpad.net/goamz/s3
 	go get github.com/Simversity/gottp
 	go get github.com/influxdb/influxdb/client
