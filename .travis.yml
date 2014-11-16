@@ -4,20 +4,15 @@ go:
   - tip
 
 before_install:
-  - sudo apt-get update -qq > apt-get.out 2>&1  || (cat apt-get.out && exit 1)
   - sudo apt-get install bzr mercurial git -qq > apt-get.out 2>&1 || (cat apt-get.out && exit 1)
-  - export GOPATH="$HOME/gopath/src/github.com/meson10/cdnlysis"
-
-install:
+  - go get labix.org/v2/mgo
   - go get launchpad.net/goamz/s3
+  - go get github.com/HouzuoGuo/tiedot
   - go get github.com/Simversity/gottp
   - go get github.com/influxdb/influxdb/client
-  - go get github.com/HouzuoGuo/tiedot
 
 script:
-  - export GOPATH="$HOME/gopath/src/github.com/meson10/cdnlysis"
-  - cd $GOPATH
-  - go build cdnlysis
+  - go build -v ./...
 
 notifications:
   email:
