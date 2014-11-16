@@ -24,18 +24,33 @@ etc.
 * CDNlysis can write to either InfluxDB, MongoDB or both.
 
 # Usage
-Installing CDNlysis is dirt easy, just make sure you have latest Go installed and follow these steps:
-In the checkout directory
+Using CDNlysis is dirt easy, just make sure you have latest Go installed and follow these steps:
+Create a simple file called run.go
+```
+// +build !appengine
+
+package main
+
+import (
+	cdnlysis "github.com/meson10/cdnlysis"
+	conf "github.com/meson10/cdnlysis/conf"
+	db "github.com/meson10/cdnlysis/db"
+)
+
+func main() {
+	cdnlysis.Setup()
+	
+	marker := db.LastMarker(conf.Settings.S3.Prefix)
+	//Only use this to resume from the last saved anchor.
+	
+	cdnlysis.Start(&marker)
+}
+```
 
 ```
-make deps
+go get github.com/meson10/cdnlysis
+go run run.go
 ```
-Should install all the dependencies for you.
-
-```
-make build
-```
-should generate a binary for you to execute.
 
 # Configuration
 
