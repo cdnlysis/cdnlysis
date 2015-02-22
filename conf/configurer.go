@@ -16,26 +16,16 @@ func GetConfig() Config {
 
 	var path string = cliArgs()
 
-	var confData []byte
+	conf := Config{}
+	yaml.Unmarshal([]byte(defaultYaml), &conf)
 
 	if path != "" {
-		confData = readYaml(path)
-	} else {
-		//Convert to a byte array to keep it consistent with the YAML
-		//parser.
-		confData = []byte(defaultYaml)
-	}
-
-	conf := Config{}
-
-	err := yaml.Unmarshal(confData, &conf)
-	if err != nil {
-		panic(err)
+		confData := readYaml(path)
+		yaml.Unmarshal(confData, &conf)
 	}
 
 	//Set the module level cached value.
 	Settings = conf
-
 	return Settings
 }
 

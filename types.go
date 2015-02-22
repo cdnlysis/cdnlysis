@@ -2,8 +2,6 @@ package cdnlysis
 
 import "errors"
 
-type LogRecordChannel chan<- *LogRecord
-
 type LogRecord struct {
 	Columns *[]string
 	Values  *[]string

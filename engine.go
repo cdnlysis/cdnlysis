@@ -12,7 +12,7 @@ import (
 
 func transform(
 	files <-chan *LogFile,
-	channels *[]LogRecordChannel,
+	channel chan<- *LogRecord,
 	errc chan<- *TransformError,
 ) {
 	for file := range files {
@@ -26,12 +26,12 @@ func transform(
 
 		log.Println(file.LogIdent(), "[Pipeline] Transforming")
 
-		Transform(file, channels, errc)
+		Transform(file, channel, errc)
 		db.SetVisited(file.Path)
 	}
 }
 
-func Start(marker *string, channels *[]LogRecordChannel) {
+func Start(marker *string, channel chan<- *LogRecord) {
 	if *marker != "" {
 		log.Println("Resuming state from:", *marker)
 	}
@@ -43,19 +43,17 @@ func Start(marker *string, channels *[]LogRecordChannel) {
 	expectedResponses := conf.Settings.Engine.Threads
 	workerChan := make(chan error, expectedResponses)
 	errc := make(chan *TransformError)
-	allDone := make(chan bool, 1)
 
 	go func() {
 		log.Println("Waiting for Errors")
 		for err := range errc {
-			log.Println(err.Path, err.Err)
+			log.Println("Error:", err.Path, err.Err)
 		}
-		allDone <- true
 	}()
 
 	for p := 0; p < conf.Settings.Engine.Threads; p++ {
 		go func() {
-			transform(incomingFiles, channels, errc)
+			transform(incomingFiles, channel, errc)
 			workerChan <- nil
 		}()
 	}
@@ -66,8 +64,6 @@ func Start(marker *string, channels *[]LogRecordChannel) {
 		// Display the result.
 		if err != nil {
 			log.Println("Received error:", err)
-		} else {
-			log.Println("Received nil error")
 		}
 
 		expectedResponses--
@@ -76,18 +72,18 @@ func Start(marker *string, channels *[]LogRecordChannel) {
 		}
 	}
 
-	<-allDone
-
 	db.Update(conf.Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		Start(marker, channels)
+		Start(marker, channel)
 	} else {
 		if conf.Settings.Engine.Verbose {
 			log.Println("Does not have more values")
 		}
 	}
 
+	log.Println("Closing Channel")
+	close(channel)
 }
 
 func Setup() {

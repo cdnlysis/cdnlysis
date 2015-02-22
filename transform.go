@@ -45,13 +45,9 @@ type TransformError struct {
 
 func Transform(
 	file *LogFile,
-	channels *[]LogRecordChannel,
+	channel chan<- *LogRecord,
 	errc chan<- *TransformError,
 ) {
-	if len(*channels) == 0 {
-		log.Println("No output channels provided. Whats the Point?")
-	}
-
 	log.Println(file.LogIdent(), "[Fetch]")
 
 	buff, err := file.Get()
@@ -104,10 +100,7 @@ func Transform(
 				continue
 			}
 
-			for ix := range *channels {
-				channel := (*channels)[ix]
-				channel <- record
-			}
+			channel <- record
 		}
 	}
 }
