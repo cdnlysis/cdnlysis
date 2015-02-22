@@ -1,4 +1,4 @@
-package pipeline
+package cdnlysis
 
 import (
 	"bufio"
@@ -8,10 +8,16 @@ import (
 	"log"
 	"regexp"
 	"strings"
-
-	"github.com/meson10/cdnlysis/backends"
-	"github.com/meson10/cdnlysis/conf"
 )
+
+const TAB = "\t"
+const SPACE = " "
+const UNDERSCORE = "_"
+
+func parseLogRecord(log_record string) *[]string {
+	split := strings.Split(log_record, TAB)
+	return &split
+}
 
 func cleanString(msg string) string {
 	if strings.HasSuffix(msg, "\n") {
@@ -21,13 +27,15 @@ func cleanString(msg string) string {
 	return msg
 }
 
-func findColumns(msg string) []string {
+func findColumns(msg string) *[]string {
 	re_head := regexp.MustCompile("#Fields:\\s+")
 	re_slug := regexp.MustCompile("[^\\w\\s]")
 
 	msg = re_head.ReplaceAllString(msg, "")
-	msg = strings.ToLower(re_slug.ReplaceAllString(msg, backends.UNDERSCORE))
-	return strings.Split(msg, backends.SPACE)
+	msg = strings.ToLower(re_slug.ReplaceAllString(msg, UNDERSCORE))
+
+	split := strings.Split(msg, SPACE)
+	return &split
 }
 
 type TransformError struct {
@@ -37,10 +45,12 @@ type TransformError struct {
 
 func Transform(
 	file *LogFile,
-	influxSink chan<- *backends.InfluxRecord,
-	mongoSink chan<- *backends.MongoRecord,
+	channels *[]LogRecordChannel,
 	errc chan<- *TransformError,
 ) {
+	if len(*channels) == 0 {
+		log.Println("No output channels provided. Whats the Point?")
+	}
 
 	log.Println(file.LogIdent(), "[Fetch]")
 
@@ -64,13 +74,7 @@ func Transform(
 	ix := 0
 	bufReader := bufio.NewReader(gzipReader)
 
-	var columns []string
-
-	series := backends.InfluxRecord{
-		conf.Settings.Logs.Prefix,
-		columns,
-		nil,
-	}
+	var columns *[]string
 
 	for {
 		ix++
@@ -90,20 +94,20 @@ func Transform(
 		} else if ix > 2 {
 			// Log Entries
 
-			if conf.Settings.Backends.Influx {
-				data := backends.MakeInfluxRecord(columns, log_record)
-				series.Points = append(series.Points, data)
+			record, err := NewRecord(
+				columns,
+				parseLogRecord(log_record),
+			)
+
+			if err != nil {
+				errc <- &TransformError{file.Path, err}
+				continue
 			}
 
-			if conf.Settings.Backends.Mongo {
-				record := backends.MakeMongoRecord(columns, log_record)
-				mongoSink <- record
+			for ix := range *channels {
+				channel := (*channels)[ix]
+				channel <- record
 			}
 		}
-	}
-
-	if conf.Settings.Backends.Influx {
-		series.Columns = columns
-		influxSink <- &series
 	}
 }

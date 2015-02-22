@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"log"
+	"os"
 
 	tiedot "github.com/HouzuoGuo/tiedot/db"
 )
@@ -114,6 +115,15 @@ func Update(Prefix string, Marker string) {
 
 func InitDB(path string) {
 	dbInit = true
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Println("DB Path does not exist. Initializing.")
+		err := os.Mkdir(path, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	syncDB, err := tiedot.OpenDB(path)
 	if err != nil {
 		panic(err)

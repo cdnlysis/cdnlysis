@@ -5,152 +5,83 @@ package cdnlysis
 import (
 	"errors"
 	"log"
-	"sync"
 
-	"github.com/meson10/cdnlysis/backends"
 	"github.com/meson10/cdnlysis/conf"
 	"github.com/meson10/cdnlysis/db"
-	"github.com/meson10/cdnlysis/pipeline"
 )
 
 func transform(
-	files <-chan *pipeline.LogFile,
-	influxSink chan<- *backends.InfluxRecord,
-	mongoSink chan<- *backends.MongoRecord,
-	errc chan<- *pipeline.TransformError,
+	files <-chan *LogFile,
+	channels *[]LogRecordChannel,
+	errc chan<- *TransformError,
 ) {
 	for file := range files {
 		if db.HasVisited(file.Path) {
-			errc <- &pipeline.TransformError{
-				file.Path, errors.New("Already Processed"),
+			errc <- &TransformError{
+				file.Path,
+				errors.New("Already Processed"),
 			}
 			continue
 		}
 
 		log.Println(file.LogIdent(), "[Pipeline] Transforming")
-		pipeline.Transform(file, influxSink, mongoSink, errc)
+
+		Transform(file, channels, errc)
 		db.SetVisited(file.Path)
 	}
 }
 
-func influxAggregator(influxSink <-chan *backends.InfluxRecord) {
-	var wg sync.WaitGroup
-
-	for v := range influxSink {
-		wg.Add(1)
-		go func(rec *backends.InfluxRecord) {
-			pipeline.AddToInflux(rec)
-			wg.Done()
-		}(v)
-	}
-
-	wg.Wait()
-}
-
-func mongoAggregator(mongoSink <-chan *backends.MongoRecord) {
-	var wg sync.WaitGroup
-
-	for v := range mongoSink {
-		wg.Add(1)
-		go func(rec *backends.MongoRecord) {
-			mongoRecords := []interface{}{rec}
-			pipeline.AddToMongo(mongoRecords)
-			wg.Done()
-		}(v)
-	}
-
-	wg.Wait()
-}
-
-func Start(marker *string) {
+func Start(marker *string, channels *[]LogRecordChannel) {
 	if *marker != "" {
 		log.Println("Resuming state from:", *marker)
 	}
 
-	it := pipeline.NewIter(*marker)
+	it := NewIter(*marker)
 
 	incomingFiles := it.Produce(marker)
 
-	var workerWaiter sync.WaitGroup
-
-	errc := make(chan *pipeline.TransformError)
-
-	//Channel to receive all values that need to be added to InfluxDB
-	influxSink := make(chan *backends.InfluxRecord)
-
-	//Channel to receive records to be added to MongoDB
-	mongoSink := make(chan *backends.MongoRecord)
-
-	WAIT := 1 //How many channels are waiting
-
-	var err error
-
-	if conf.Settings.Backends.Influx {
-		WAIT++
-		err = pipeline.RefreshInfluxSession()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	}
-
-	if conf.Settings.Backends.Mongo {
-		WAIT++
-		err = pipeline.RefreshMongoSession()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	}
-
-	workerWaiter.Add(conf.Settings.Engine.Threads)
-
-	for p := 0; p < conf.Settings.Engine.Threads; p++ {
-		go func() {
-			transform(incomingFiles, influxSink, mongoSink, errc)
-			workerWaiter.Done()
-		}()
-	}
-
-	var resultGroup sync.WaitGroup
-	resultGroup.Add(WAIT)
+	expectedResponses := conf.Settings.Engine.Threads
+	workerChan := make(chan error, expectedResponses)
+	errc := make(chan *TransformError)
+	allDone := make(chan bool, 1)
 
 	go func() {
 		log.Println("Waiting for Errors")
 		for err := range errc {
 			log.Println(err.Path, err.Err)
 		}
-		resultGroup.Done()
+		allDone <- true
 	}()
 
-	if conf.Settings.Backends.Influx {
+	for p := 0; p < conf.Settings.Engine.Threads; p++ {
 		go func() {
-			log.Println("Waiting for Influxers")
-			influxAggregator(influxSink)
-			resultGroup.Done()
+			transform(incomingFiles, channels, errc)
+			workerChan <- nil
 		}()
 	}
 
-	if conf.Settings.Backends.Mongo {
-		go func() {
-			log.Println("Waiting for Mongo")
-			mongoAggregator(mongoSink)
-			resultGroup.Done()
-		}()
+	for {
+		err := <-workerChan
+
+		// Display the result.
+		if err != nil {
+			log.Println("Received error:", err)
+		} else {
+			log.Println("Received nil error")
+		}
+
+		expectedResponses--
+		if expectedResponses == 0 {
+			break
+		}
 	}
 
-	workerWaiter.Wait()
-
-	close(errc)
-	close(influxSink)
-	close(mongoSink)
-
-	resultGroup.Wait()
+	<-allDone
 
 	db.Update(conf.Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		Start(marker)
+		Start(marker, channels)
 	} else {
 		if conf.Settings.Engine.Verbose {
 			log.Println("Does not have more values")
@@ -160,10 +91,9 @@ func Start(marker *string) {
 }
 
 func Setup() {
-	conf.CliArgs()
+	conf.GetConfig()
 
-	//TODO: Disable Mongo because of the timeout error.
-	conf.Settings.Backends.Mongo = false
+	log.Println(conf.Settings)
 
 	db.InitDB(conf.Settings.SyncProgress.Path)
 }

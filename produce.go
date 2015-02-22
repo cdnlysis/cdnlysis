@@ -1,4 +1,4 @@
-package pipeline
+package cdnlysis
 
 import (
 	"io"
