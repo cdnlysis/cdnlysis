@@ -2,6 +2,7 @@ package conf
 
 import (
 	"io/ioutil"
+	"log"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -17,7 +18,10 @@ func GetConfig() Config {
 	var path string = cliArgs()
 
 	conf := Config{}
-	yaml.Unmarshal([]byte(defaultYaml), &conf)
+	err := yaml.Unmarshal([]byte(defaultYaml), &conf)
+	if err != nil {
+		log.Println(err)
+	}
 
 	if path != "" {
 		confData := readYaml(path)

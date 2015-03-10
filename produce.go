@@ -65,7 +65,13 @@ func (self *Iterator) Produce(marker *string) <-chan *LogFile {
 	go func(count int) {
 		defer close(files)
 		for ix, file := range self.crawler.List.Contents {
-			logfile := LogFile{file.Key, self.crawler.bucket, ix, count}
+			logfile := LogFile{
+				file.Key,
+				self.crawler.bucket,
+				ix,
+				count,
+			}
+
 			log.Println(logfile.LogIdent(), "[Producer] Dispatching")
 			files <- &logfile
 			*marker = file.Key
