@@ -1,4 +1,4 @@
-![Build Status](https://travis-ci.org/meson10/cdnlysis.svg?branch=dev)
+![Build Status](https://travis-ci.org/cdnlysis/cdnlysis.svg?branch=dev)
 
 cdnlysis
 ========
@@ -32,9 +32,9 @@ Create a simple file called run.go
 package main
 
 import (
-	cdnlysis "github.com/meson10/cdnlysis"
-	conf "github.com/meson10/cdnlysis/conf"
-	db "github.com/meson10/cdnlysis/db"
+	cdnlysis "github.com/cdnlysis/cdnlysis"
+	conf "github.com/cdnlysis/cdnlysis/conf"
+	db "github.com/cdnlysis/cdnlysis/db"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
 ```
 
 ```
-go get github.com/meson10/cdnlysis
+go get github.com/cdnlysis/cdnlysis
 go run run.go
 ```
 

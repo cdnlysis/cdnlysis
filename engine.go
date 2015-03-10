@@ -6,8 +6,8 @@ import (
 	"errors"
 	"log"
 
-	"github.com/meson10/cdnlysis/conf"
-	"github.com/meson10/cdnlysis/db"
+	"github.com/cdnlysis/cdnlysis/conf"
+	"github.com/cdnlysis/cdnlysis/db"
 )
 
 func transform(

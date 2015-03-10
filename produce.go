@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/meson10/cdnlysis/conf"
+	"github.com/cdnlysis/cdnlysis/conf"
 
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
