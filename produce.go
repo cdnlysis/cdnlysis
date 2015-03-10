@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/cdnlysis/cdnlysis/conf"
+	"gopkg.in/cdnlysis/cdnlysis.v1/conf"
 
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
