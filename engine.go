@@ -6,8 +6,8 @@ import (
 	"errors"
 	"log"
 
-	"github.com/cdnlysis/cdnlysis/conf"
-	"github.com/cdnlysis/cdnlysis/db"
+	"gopkg.in/cdnlysis/cdnlysis.v1/conf"
+	"gopkg.in/cdnlysis/cdnlysis.v1/db"
 )
 
 func transform(
