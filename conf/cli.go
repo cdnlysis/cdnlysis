@@ -5,18 +5,25 @@ import (
 	"log"
 )
 
-func cliArgs() string {
-	var config = flag.String(
-		"config",
-		"",
-		"Config [.yml format] file to load the configurations from",
-	)
+func CliArgs() string {
+	confFlag := flag.Lookup("config")
 
-	flag.Parse()
+	if confFlag == nil || len(confFlag.Value.String()) == 0 {
+		var config = flag.String(
+			"config",
+			"",
+			"Config [.yml format] file to load the configurations from",
+		)
 
-	if *config == "" {
-		log.Println("No config file supplied. Using defauls.")
+		flag.Parse()
+
+		if *config == "" {
+			log.Println("No config file supplied. Using defauls.")
+		}
+
+		return *config
 	}
 
-	return *config
+	return confFlag.Value.String()
+
 }

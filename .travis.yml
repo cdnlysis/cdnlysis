@@ -4,7 +4,6 @@ go:
   - tip
 
 before_install:
-  - sudo apt-get install bzr mercurial git -qq > apt-get.out 2>&1 || (cat apt-get.out && exit 1)
   - go get launchpad.net/goamz/s3
   - go get github.com/HouzuoGuo/tiedot
   - go get gopkg.in/yaml.v2
@@ -13,6 +12,7 @@ script:
   - go build -v ./...
 
 notifications:
+  slack: siminars:st82ura5uv0xQ52hTmHCqiNs
   email:
     recipients:
       - piyush@piyushverma.net

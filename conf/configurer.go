@@ -15,7 +15,7 @@ func GetConfig() Config {
 		return Settings
 	}
 
-	var path string = cliArgs()
+	var path string = CliArgs()
 
 	conf := Config{}
 	err := yaml.Unmarshal([]byte(defaultYaml), &conf)
