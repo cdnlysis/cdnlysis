@@ -29,10 +29,9 @@ func GetConfig() Config {
 		yaml.Unmarshal(confData, &conf)
 	}
 
-	markerFlag := flag.Lookup("marker")
-	marker := markerFlag.Value.String()
-	if marker != "" {
-		conf.S3.Prefix = marker
+	prefix := flag.Lookup("prefix").Value.String()
+	if prefix != "" {
+		conf.S3.Prefix = prefix
 	}
 
 	//Set the module level cached value.

@@ -31,12 +31,7 @@ func transform(
 	}
 }
 
-func Start(marker *string, channel chan<- *LogRecord) {
-	if *marker == "" {
-		last := db.LastMarker(conf.Settings.S3.Prefix)
-		marker = &last
-	}
-
+func keepGoing(marker *string, channel chan<- *LogRecord) {
 	if *marker != "" {
 		log.Println("Resuming state from:", *marker)
 	}
@@ -86,6 +81,16 @@ func Start(marker *string, channel chan<- *LogRecord) {
 			log.Println("Does not have more values")
 		}
 	}
+}
+
+func Start(prefix *string, channel chan<- *LogRecord) {
+	var marker string
+
+	if *prefix == "" {
+		marker = db.LastMarker(conf.Settings.S3.Prefix)
+	}
+
+	keepGoing(&marker, channel)
 
 	log.Println("Closing Channel")
 	close(channel)
