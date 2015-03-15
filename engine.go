@@ -32,6 +32,11 @@ func transform(
 }
 
 func Start(marker *string, channel chan<- *LogRecord) {
+	if *marker == "" {
+		last := db.LastMarker(conf.Settings.S3.Prefix)
+		marker = &last
+	}
+
 	if *marker != "" {
 		log.Println("Resuming state from:", *marker)
 	}

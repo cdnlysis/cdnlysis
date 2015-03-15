@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"flag"
 	"io/ioutil"
 	"log"
 
@@ -26,6 +27,12 @@ func GetConfig() Config {
 	if path != "" {
 		confData := readYaml(path)
 		yaml.Unmarshal(confData, &conf)
+	}
+
+	markerFlag := flag.Lookup("marker")
+	marker := markerFlag.Value.String()
+	if marker != "" {
+		conf.S3.Prefix = marker
 	}
 
 	//Set the module level cached value.

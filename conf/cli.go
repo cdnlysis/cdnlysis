@@ -6,9 +6,13 @@ import (
 )
 
 func CliArgs() string {
-	confFlag := flag.Lookup("config")
+	if !flag.Parsed() {
+		flag.String(
+			"marker",
+			"",
+			"Marker to resume from",
+		)
 
-	if confFlag == nil || len(confFlag.Value.String()) == 0 {
 		var config = flag.String(
 			"config",
 			"",
@@ -24,6 +28,7 @@ func CliArgs() string {
 		return *config
 	}
 
+	confFlag := flag.Lookup("config")
 	return confFlag.Value.String()
 
 }

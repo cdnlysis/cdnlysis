@@ -19,9 +19,4 @@ type Config struct {
 		Bucket    string
 		Region    string
 	}
-
-	Logs struct {
-		Prefix   string
-		Location string
-	}
 }
