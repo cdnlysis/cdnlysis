@@ -8,9 +8,9 @@ import (
 func CliArgs() string {
 	if !flag.Parsed() {
 		flag.String(
-			"marker",
+			"prefix",
 			"",
-			"Marker to resume from",
+			"Prefix/Directory to load data from",
 		)
 
 		var config = flag.String(
