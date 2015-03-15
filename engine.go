@@ -75,7 +75,7 @@ func keepGoing(marker *string, channel chan<- *LogRecord) {
 	db.Update(conf.Settings.S3.Prefix, *marker)
 
 	if it.IsTruncated {
-		Start(marker, channel)
+		keepGoing(marker, channel)
 	} else {
 		if conf.Settings.Engine.Verbose {
 			log.Println("Does not have more values")
