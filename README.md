@@ -32,9 +32,9 @@ Create a simple file called run.go
 package main
 
 import (
-	cdnlysis "github.com/cdnlysis/cdnlysis"
-	conf "github.com/cdnlysis/cdnlysis/conf"
-	db "github.com/cdnlysis/cdnlysis/db"
+	cdnlysis "gopkg.in/cdnlysis/cdnlysis.v1"
+	conf "gopkg.in/cdnlysis/cdnlysis.v1/conf"
+	db "gopkg.in/cdnlysis/cdnlysis.v1/db"
 )
 
 func main() {
