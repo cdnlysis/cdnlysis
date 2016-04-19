@@ -55,6 +55,15 @@ go run run.go
 
 # Configuration
 
+To generate a Binary, just run go build in the directoty where your run.go is
+
+```
+piyush:cdnlysis  λ go build .
+
+piyush:cdnlysis  λ ls
+cdnlysis  sample.go
+```
+
 Use the newly created binary to generate help
 
 ```
