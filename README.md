@@ -43,7 +43,8 @@ func main() {
 	marker := db.LastMarker(conf.Settings.S3.Prefix)
 	//Only use this to resume from the last saved anchor.
 	
-	cdnlysis.Start(&marker)
+	record_chan := make(chan *cdnlysis.LogRecord)
+	cdnlysis.Start(&marker, record_chan)
 }
 ```
 
